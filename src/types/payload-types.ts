@@ -73,6 +73,8 @@ export interface Config {
     purchases: Purchase;
     coupons: Coupon;
     media: Media;
+    'cryptomus-payments': CryptomusPayment;
+    'renewal-reminders': RenewalReminder;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -85,6 +87,8 @@ export interface Config {
     purchases: PurchasesSelect<false> | PurchasesSelect<true>;
     coupons: CouponsSelect<false> | CouponsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'cryptomus-payments': CryptomusPaymentsSelect<false> | CryptomusPaymentsSelect<true>;
+    'renewal-reminders': RenewalRemindersSelect<false> | RenewalRemindersSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -294,6 +298,65 @@ export interface Coupon {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cryptomus-payments".
+ */
+export interface CryptomusPayment {
+  id: number;
+  user: number | User;
+  product: number | Product;
+  uuid: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  type: 'one_time' | 'subscription' | 'prepaid_subscription' | 'subscription_renewal';
+  status: 'pending' | 'paid' | 'fail' | 'wrong_amount' | 'process' | 'confirm_check';
+  paymentUrl?: string | null;
+  couponCode?: string | null;
+  paidAt?: string | null;
+  cryptoCurrency?: string | null;
+  cryptoAmount?: string | null;
+  network?: string | null;
+  /**
+   * The subscription this renewal payment is for
+   */
+  relatedSubscription?: (number | null) | Subscription;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Manages renewal reminders for prepaid subscriptions
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "renewal-reminders".
+ */
+export interface RenewalReminder {
+  id: number;
+  user: number | User;
+  product: number | Product;
+  /**
+   * When to send the renewal reminder
+   */
+  reminderDate: string;
+  /**
+   * When the subscription expires and needs renewal
+   */
+  renewalDate: string;
+  status: 'pending' | 'sent' | 'renewed' | 'expired' | 'canceled';
+  type: 'cryptomus_prepaid_subscription' | 'other';
+  /**
+   * When the reminder was sent
+   */
+  sentAt?: string | null;
+  /**
+   * Number of reminders sent
+   */
+  reminderCount?: number | null;
+  lastReminderSent?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -322,6 +385,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'cryptomus-payments';
+        value: number | CryptomusPayment;
+      } | null)
+    | ({
+        relationTo: 'renewal-reminders';
+        value: number | RenewalReminder;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -516,6 +587,46 @@ export interface MediaSelect<T extends boolean = true> {
               filename?: T;
             };
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cryptomus-payments_select".
+ */
+export interface CryptomusPaymentsSelect<T extends boolean = true> {
+  user?: T;
+  product?: T;
+  uuid?: T;
+  orderId?: T;
+  amount?: T;
+  currency?: T;
+  type?: T;
+  status?: T;
+  paymentUrl?: T;
+  couponCode?: T;
+  paidAt?: T;
+  cryptoCurrency?: T;
+  cryptoAmount?: T;
+  network?: T;
+  relatedSubscription?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "renewal-reminders_select".
+ */
+export interface RenewalRemindersSelect<T extends boolean = true> {
+  user?: T;
+  product?: T;
+  reminderDate?: T;
+  renewalDate?: T;
+  status?: T;
+  type?: T;
+  sentAt?: T;
+  reminderCount?: T;
+  lastReminderSent?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

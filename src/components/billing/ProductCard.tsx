@@ -8,6 +8,7 @@ import { PurchaseButton } from '@/components/billing/PurchaseButton'
 import { PortalButton } from '@/components/billing/PortalButton'
 import { CouponInput } from '@/components/billing/CouponInput'
 import { UpgradeButton } from '@/components/billing/UpgradeButton'
+import { PaymentMethodSelector } from '@/components/billing/PaymentMethodSelector'
 import type { Product, Subscription } from '@/types/payload-types'
 
 interface ProductCardProps {
@@ -107,15 +108,12 @@ export function ProductCard({
             className="w-full"
           />
         ) : (
-          <PurchaseButton
+          <PaymentMethodSelector
             productId={product.id.toString()}
             priceType={priceType}
             couponCode={appliedCoupon?.code}
-            disabled={disabled}
-            className="w-full"
-          >
-            {priceType === 'subscription' ? 'Subscribe' : 'Purchase'}
-          </PurchaseButton>
+            isMonthlySubscription={priceType === 'subscription' && product.interval === 'month'}
+          />
         )}
       </CardFooter>
     </Card>

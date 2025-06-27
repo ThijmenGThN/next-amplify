@@ -38,7 +38,7 @@ export async function createTestPurchase(userId: string, productId: string) {
         amount: product.price,
         currency: product.currency || 'usd',
         status: 'completed',
-        purchaseDate: new Date(),
+        purchaseDate: new Date().toISOString(),
       },
     })
 

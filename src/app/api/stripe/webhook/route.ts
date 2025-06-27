@@ -110,8 +110,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, paylo
       id: existingSubscriptions.docs[0].id,
       data: {
         status: subscription.status,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
       },
@@ -142,8 +142,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, paylo
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: customerId,
         status: subscription.status,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
       },
@@ -213,7 +213,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, payl
   })
 }
 
-async function handlePaymentSucceeded(invoice: Stripe.Invoice, payload: any) {
+async function handlePaymentSucceeded(invoice: Stripe.Invoice, _payload: any) {
   console.log('Payment succeeded for invoice:', invoice.id)
   // Additional logic for successful payments can be added here
 }

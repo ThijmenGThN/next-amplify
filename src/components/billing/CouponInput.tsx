@@ -42,7 +42,7 @@ export function CouponInput({ onCouponApplied, productId, className }: CouponInp
         setError(result.error || 'Invalid coupon code')
         onCouponApplied(null)
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to validate coupon')
       onCouponApplied(null)
     } finally {

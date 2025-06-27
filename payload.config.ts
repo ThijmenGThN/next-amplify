@@ -13,6 +13,8 @@ import { Subscriptions } from '@/backend/collections/Subscriptions'
 import { Purchases } from '@/backend/collections/Purchases'
 import { Coupons } from '@/backend/collections/Coupons'
 import { Media } from '@/backend/collections/Media'
+import { CryptomusPayments } from '@/backend/collections/CryptomusPayments'
+import { RenewalReminders } from '@/backend/collections/RenewalReminders'
 
 const collections = [
   Users,
@@ -21,6 +23,8 @@ const collections = [
   Purchases,
   Coupons,
   Media,
+  CryptomusPayments,
+  RenewalReminders,
 ]
 
 const filename = fileURLToPath(import.meta.url)

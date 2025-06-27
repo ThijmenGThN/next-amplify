@@ -39,7 +39,7 @@ export default function Client({ user }: { user: User }) {
                     type: 'error'
                 })
             }
-        } catch (error) {
+        } catch (_error) {
             setMessage({
                 text: 'An error occurred while updating your profile',
                 type: 'error'

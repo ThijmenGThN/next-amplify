@@ -10,9 +10,9 @@ export async function getCurrentUser() {
     const cookieStore = await cookies()
     
     const { user } = await payload.auth({
-      headers: {
+      headers: new Headers({
         cookie: cookieStore.toString(),
-      },
+      }),
     })
 
     if (!user) {
@@ -64,7 +64,7 @@ export async function loginUser(email: string, password: string) {
       success: false,
       error: "Login failed"
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: "An unexpected error occurred. Please try again."
@@ -105,7 +105,7 @@ export async function registerAndLogin(userData: {
       success: true,
       redirectToLogin: true
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: 'An unexpected error occurred. Please try again.'

@@ -36,7 +36,7 @@ async function createOrGetStripeCoupon(coupon: any) {
     try {
       await stripe.coupons.retrieve(coupon.stripeCouponId)
       return coupon.stripeCouponId
-    } catch (error) {
+    } catch (_error) {
       console.log('Stripe coupon not found, creating new one:', coupon.stripeCouponId)
       // Continue to create new one
     }
@@ -92,7 +92,7 @@ async function createOrGetStripeProduct(item: any, type: 'subscription' | 'one_t
         productId: item.stripeProductId,
         priceId: item.stripePriceId
       }
-    } catch (error) {
+    } catch (_error) {
       console.log('Stripe product/price not found, creating new ones:', item.stripeProductId, item.stripePriceId)
       // Continue to create new ones
     }
@@ -171,7 +171,7 @@ export async function createCheckoutSession({
   if (stripeCustomerId) {
     try {
       await stripe.customers.retrieve(stripeCustomerId)
-    } catch (error) {
+    } catch (_error) {
       console.log('Stripe customer not found, creating new one:', stripeCustomerId)
       stripeCustomerId = await createStripeCustomer(user)
     }
@@ -392,7 +392,7 @@ export async function cancelSubscription(subscriptionId: string) {
     where: {
       and: [
         { user: { equals: user.id } },
-        { id: { equals: subscriptionId } }
+        { id: { equals: typeof subscriptionId === 'string' ? parseInt(subscriptionId) : subscriptionId } }
       ]
     },
   })
@@ -446,14 +446,21 @@ export async function upgradeSubscription(currentSubscriptionId: string, newProd
   const payload = await getPayload()
   
   // Get current subscription
-  const currentSub = await payload.findByID({
+  const subscriptions = await payload.find({
     collection: 'subscriptions',
-    id: currentSubscriptionId,
+    where: {
+      and: [
+        { user: { equals: user.id } },
+        { id: { equals: typeof currentSubscriptionId === 'string' ? parseInt(currentSubscriptionId) : currentSubscriptionId } }
+      ]
+    },
   })
 
-  if (!currentSub || currentSub.user !== user.id) {
+  if (subscriptions.docs.length === 0) {
     throw new Error('Subscription not found')
   }
+
+  const currentSub = subscriptions.docs[0]
 
   // Get new product
   const newProduct = await payload.findByID({
@@ -496,4 +503,63 @@ export async function upgradeSubscription(currentSubscriptionId: string, newProd
   })
 
   return { success: true }
+}
+
+export async function reactivateSubscription(subscriptionId: string) {
+  const user = await getUser()
+  
+  if (!user) {
+    throw new Error('Authentication required')
+  }
+
+  const payload = await getPayload()
+  
+  // Get the subscription from our database
+  const subscriptions = await payload.find({
+    collection: 'subscriptions',
+    where: {
+      and: [
+        { user: { equals: user.id } },
+        { id: { equals: typeof subscriptionId === 'string' ? parseInt(subscriptionId) : subscriptionId } }
+      ]
+    },
+  })
+
+  if (subscriptions.docs.length === 0) {
+    throw new Error('Subscription not found')
+  }
+
+  const subscription = subscriptions.docs[0]
+
+  // Handle crypto subscriptions (those that were canceled and need to be recreated)
+  if (subscription.stripeSubscriptionId?.startsWith('cryptomus_') || subscription.stripeSubscriptionId?.startsWith('free_')) {
+    // For crypto subscriptions, we need to create a new payment
+    // This will redirect the user to create a new subscription
+    return { success: true, requiresNewPayment: true }
+  }
+
+  // Reactivate the Stripe subscription
+  if (subscription.stripeSubscriptionId && subscription.status === 'canceled') {
+    // For completely canceled subscriptions, we need to create a new subscription
+    // as Stripe doesn't allow reactivating canceled subscriptions
+    return { success: true, requiresNewPayment: true }
+  } else if (subscription.stripeSubscriptionId && subscription.cancelAtPeriodEnd) {
+    // For subscriptions that are set to cancel at period end, we can just remove the cancellation
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: false,
+    })
+
+    // Update our database
+    await payload.update({
+      collection: 'subscriptions',
+      id: subscription.id,
+      data: {
+        cancelAtPeriodEnd: false,
+      },
+    })
+
+    return { success: true, requiresNewPayment: false }
+  }
+
+  throw new Error('Unable to reactivate this subscription')
 }
