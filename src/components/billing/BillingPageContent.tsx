@@ -465,21 +465,20 @@ function ProductCard({
         )}
 
         <div className="pt-4 border-t">
-          {hasPurchased ? (
-            <div className="text-center">
-              <Badge variant="outline" className="text-green-600 border-green-600">
+          <PaymentMethodSelector
+            productId={product.id.toString()}
+            priceType="one_time"
+            couponCode={couponCode}
+            selectedMethod={paymentMethod}
+            className="w-full"
+          />
+          {hasPurchased && (
+            <div className="mt-2 text-center">
+              <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
                 <CheckCircle className="w-3 h-3 mr-1" />
-                Purchased
+                Previously Purchased
               </Badge>
             </div>
-          ) : (
-            <PaymentMethodSelector
-              productId={product.id.toString()}
-              priceType="one_time"
-              couponCode={couponCode}
-              selectedMethod={paymentMethod}
-              className="w-full"
-            />
           )}
         </div>
       </CardContent>

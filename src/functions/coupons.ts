@@ -56,10 +56,18 @@ export async function validateCoupon(code: string, productId?: string): Promise<
     }
 
     // Check product applicability
-    if (productId) {
+    if (productId && productId !== 'global') {
+      const productIdNum = parseInt(productId)
+      if (isNaN(productIdNum)) {
+        return {
+          valid: false,
+          error: 'Invalid product ID'
+        }
+      }
+      
       const product = await payload.findByID({
         collection: 'products',
-        id: parseInt(productId),
+        id: productIdNum,
       })
 
       if (!product) {

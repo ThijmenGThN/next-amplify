@@ -63,68 +63,57 @@ export function CouponInput({ onCouponApplied, productId, className }: CouponInp
   }
 
   return (
-    <Card className={className}>
-      <CardContent>
-        <div className="space-y-3">
+    <div className="space-y-3">
+      {appliedCoupon ? (
+        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center gap-2">
-            <Tag className="w-4 h-4" />
-            <Label htmlFor="coupon-input" className="text-sm font-medium">
-              Promo Code
-            </Label>
+            <Check className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-800">
+              {appliedCoupon.code}
+            </span>
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              {appliedCoupon.discount.displayText}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRemoveCoupon}
+            className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              id="coupon-input"
+              placeholder="Enter promo code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              onKeyDown={handleKeyDown}
+              disabled={loading}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleApplyCoupon}
+              disabled={!couponCode.trim() || loading}
+              size="default"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Apply'
+              )}
+            </Button>
           </div>
 
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">
-                  {appliedCoupon.code}
-                </span>
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  {appliedCoupon.discount.displayText}
-                </Badge>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRemoveCoupon}
-                className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex flex-col gap-2">
-                <Input
-                  id="coupon-input"
-                  placeholder="Enter promo code"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  onKeyDown={handleKeyDown}
-                  disabled={loading}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleApplyCoupon}
-                  disabled={!couponCode.trim() || loading}
-                  size="default"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    'Apply'
-                  )}
-                </Button>
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-600">{error}</p>
-              )}
-            </div>
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

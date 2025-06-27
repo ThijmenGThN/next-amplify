@@ -6,11 +6,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as CryptomusWebhookData
     
-    // Verify webhook signature (temporarily disabled for testing)
-    // if (!verifyCryptomusWebhook(body, body.sign)) {
-    //   console.error('Invalid Cryptomus webhook signature')
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
-    // }
+    // Verify webhook signature
+    if (!verifyCryptomusWebhook(body, body.sign)) {
+      console.error('Invalid Cryptomus webhook signature')
+      console.error('Webhook data:', body)
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    }
 
     const payload = await getPayload()
 

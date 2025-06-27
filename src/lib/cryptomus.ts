@@ -66,27 +66,78 @@ class CryptomusClient {
         .filter(([_, value]) => value !== undefined && value !== null)
     )
     
-    // Sort the data alphabetically by keys
+    // Sort keys alphabetically (common requirement for crypto APIs)
     const sortedKeys = Object.keys(cleanData).sort()
     const sortedData: Record<string, any> = {}
     
     for (const key of sortedKeys) {
       sortedData[key] = cleanData[key]
     }
-
-    // Create JSON string
+    
+    // Create JSON string without escaping forward slashes (try without escaping first)
     const jsonString = JSON.stringify(sortedData)
+    
+    // Debug logging
+    console.log('Cryptomus signature generation:')
+    console.log('- Data:', sortedData)
+    console.log('- JSON:', jsonString)
     
     // Encode to base64
     const base64Data = Buffer.from(jsonString, 'utf8').toString('base64')
+    console.log('- Base64:', base64Data)
     
     // Create MD5 hash of base64 + api_key
     const signatureString = base64Data + this.apiKey
+    console.log('- Signature string length:', signatureString.length)
     
     const hash = crypto
       .createHash('md5')
       .update(signatureString, 'utf8')
       .digest('hex')
+    
+    console.log('- Final hash:', hash)
+    
+    return hash
+  }
+
+  private generateJsonBody(data: Record<string, any>): string {
+    // Remove any undefined or null values but keep proper types
+    const cleanData = Object.fromEntries(
+      Object.entries(data)
+        .filter(([_, value]) => value !== undefined && value !== null)
+    )
+    
+    // Sort keys alphabetically (common requirement for crypto APIs)
+    const sortedKeys = Object.keys(cleanData).sort()
+    const sortedData: Record<string, any> = {}
+    
+    for (const key of sortedKeys) {
+      sortedData[key] = cleanData[key]
+    }
+    
+    // Create JSON string
+    return JSON.stringify(sortedData)
+  }
+
+  private generateSignFromJson(jsonString: string): string {
+    // Debug logging
+    console.log('Cryptomus signature generation:')
+    console.log('- JSON:', jsonString)
+    
+    // Encode to base64
+    const base64Data = Buffer.from(jsonString, 'utf8').toString('base64')
+    console.log('- Base64:', base64Data)
+    
+    // Create MD5 hash of base64 + api_key
+    const signatureString = base64Data + this.apiKey
+    console.log('- Signature string length:', signatureString.length)
+    
+    const hash = crypto
+      .createHash('md5')
+      .update(signatureString, 'utf8')
+      .digest('hex')
+    
+    console.log('- Final hash:', hash)
     
     return hash
   }
@@ -97,7 +148,11 @@ class CryptomusClient {
       merchant_id: this.merchantId,
     }
 
-    const sign = this.generateSign(data)
+    // Generate the JSON body that will be sent
+    const jsonBody = this.generateJsonBody(data)
+    
+    // Generate signature from the same JSON that will be sent
+    const sign = this.generateSignFromJson(jsonBody)
 
     const response = await fetch(`${this.baseUrl}/payment`, {
       method: 'POST',
@@ -106,7 +161,7 @@ class CryptomusClient {
         'merchant': this.merchantId,
         'sign': sign,
       },
-      body: JSON.stringify(data),
+      body: jsonBody,
     })
 
     if (!response.ok) {
@@ -114,7 +169,7 @@ class CryptomusClient {
       console.error('Cryptomus API error details:', {
         status: response.status,
         data: errorData,
-        sentData: data,
+        sentJsonBody: jsonBody,
         signature: sign
       })
       throw new Error(`Cryptomus API error: ${response.status} - ${errorData.message || 'Invalid Sign'}`)
@@ -162,7 +217,14 @@ class CryptomusClient {
   }
 
   verifyWebhook(webhookData: CryptomusWebhookData, expectedSign: string): boolean {
+    // For Cryptomus, the webhook signature is calculated the same way as API requests
     const { sign: _sign, ...dataWithoutSign } = webhookData
+    
+    // Add merchant_id if not present (some webhooks might not include it)
+    if (!dataWithoutSign.merchant_id) {
+      dataWithoutSign.merchant_id = this.merchantId
+    }
+    
     const calculatedSign = this.generateSign(dataWithoutSign)
     return calculatedSign === expectedSign
   }
