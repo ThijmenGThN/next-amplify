@@ -2,7 +2,7 @@
 
 import { getPayload } from './connector'
 import { getUser } from './users'
-import { Product, Plan, Subscription } from '@/types/payload-types'
+import { Product, Subscription, Purchase } from '@/types/payload-types'
 
 export async function getActiveProducts(): Promise<Product[]> {
   const payload = await getPayload()
@@ -21,18 +21,21 @@ export async function getActiveProducts(): Promise<Product[]> {
   return products.docs
 }
 
-export async function getActivePlans(): Promise<Plan[]> {
+export async function getActiveSubscriptionProducts(): Promise<Product[]> {
   const payload = await getPayload()
   
-  const plans = await payload.find({
-    collection: 'plans',
+  const products = await payload.find({
+    collection: 'products',
     where: {
-      isActive: { equals: true }
+      and: [
+        { isActive: { equals: true } },
+        { type: { equals: 'subscription' } }
+      ]
     },
     sort: 'sortOrder',
   })
   
-  return plans.docs
+  return products.docs
 }
 
 export async function getUserSubscription(userId: string): Promise<Subscription | null> {
@@ -53,6 +56,25 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
   return userSubscriptions.docs[0] || null
 }
 
+export async function getUserPurchases(userId: string): Promise<Purchase[]> {
+  const payload = await getPayload()
+  
+  const userPurchases = await payload.find({
+    collection: 'purchases',
+    where: {
+      and: [
+        { user: { equals: userId } },
+        { status: { equals: 'completed' } }
+      ]
+    },
+    depth: 2,
+    sort: '-purchaseDate',
+  })
+  
+  return userPurchases.docs
+}
+
+
 export async function getBillingData() {
   const user = await getUser()
   
@@ -60,16 +82,18 @@ export async function getBillingData() {
     return null
   }
 
-  const [products, plans, currentSubscription] = await Promise.all([
+  const [products, subscriptionProducts, currentSubscription, userPurchases] = await Promise.all([
     getActiveProducts(),
-    getActivePlans(),
-    getUserSubscription(user.id!)
+    getActiveSubscriptionProducts(),
+    getUserSubscription(user.id!.toString()),
+    getUserPurchases(user.id!.toString())
   ])
 
   return {
     user,
     products,
-    plans,
-    currentSubscription
+    subscriptionProducts,
+    currentSubscription,
+    userPurchases
   }
 }

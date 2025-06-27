@@ -1,5 +1,40 @@
 "use server"
 
+import { getPayload } from 'payload'
+import config from '@payload-config'
+import { cookies } from 'next/headers'
+
+export async function getCurrentUser() {
+  try {
+    const payload = await getPayload({ config })
+    const cookieStore = await cookies()
+    
+    const { user } = await payload.auth({
+      headers: {
+        cookie: cookieStore.toString(),
+      },
+    })
+
+    if (!user) {
+      return null
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      role: user.role,
+      stripeCustomerId: user.stripeCustomerId,
+      subscriptionStatus: user.subscriptionStatus,
+      currentProduct: user.currentProduct
+    }
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
+  }
+}
+
 export async function loginUser(email: string, password: string) {
   try {
     const req = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/login`, {

@@ -1,29 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCheckoutSession } from '@/functions/stripe'
+import { upgradeSubscription } from '@/functions/stripe'
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, priceType, couponCode, successUrl, cancelUrl } = await req.json()
+    const { currentSubscriptionId, newProductId } = await req.json()
     
-    if (!productId || !priceType) {
+    if (!currentSubscriptionId || !newProductId) {
       return NextResponse.json(
-        { error: 'Product ID and price type are required' },
+        { error: 'Current subscription ID and new product ID are required' },
         { status: 400 }
       )
     }
 
-    const session = await createCheckoutSession({
-      productId,
-      priceType,
-      couponCode,
-      successUrl,
-      cancelUrl
-    })
-
-    return NextResponse.json(session)
+    const result = await upgradeSubscription(currentSubscriptionId, newProductId)
+    return NextResponse.json(result)
 
   } catch (error) {
-    console.error('Checkout session creation failed:', error)
+    console.error('Subscription upgrade failed:', error)
     
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
@@ -32,13 +25,13 @@ export async function POST(req: NextRequest) {
           { status: 401 }
         )
       }
-      if (error.message === 'Plan not found' || error.message === 'Product not found') {
+      if (error.message === 'Subscription not found' || error.message === 'Product not found') {
         return NextResponse.json(
           { error: error.message },
           { status: 404 }
         )
       }
-      if (error.message.includes('not configured with Stripe')) {
+      if (error.message.includes('contact support')) {
         return NextResponse.json(
           { error: error.message },
           { status: 400 }
@@ -47,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: 'Failed to upgrade subscription' },
       { status: 500 }
     )
   }

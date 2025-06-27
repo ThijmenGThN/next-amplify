@@ -9,15 +9,17 @@ import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { migrations } from '@/backend/migrations'
 import { Users } from '@/backend/collections/Users'
 import { Products } from '@/backend/collections/Products'
-import { Plans } from '@/backend/collections/Plans'
 import { Subscriptions } from '@/backend/collections/Subscriptions'
+import { Purchases } from '@/backend/collections/Purchases'
+import { Coupons } from '@/backend/collections/Coupons'
 import { Media } from '@/backend/collections/Media'
 
 const collections = [
   Users,
   Products,
-  Plans,
   Subscriptions,
+  Purchases,
+  Coupons,
   Media,
 ]
 

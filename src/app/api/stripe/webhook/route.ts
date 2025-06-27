@@ -5,7 +5,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-05-28.basil',
 })
 
 export async function POST(req: NextRequest) {
@@ -32,22 +32,33 @@ export async function POST(req: NextRequest) {
   const payload = await getPayload({ config })
 
   try {
+    console.log(`Received Stripe webhook event: ${event.type}`)
+    
     switch (event.type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
+        console.log('Handling subscription change event')
         await handleSubscriptionChange(event.data.object as Stripe.Subscription, payload)
         break
       
       case 'customer.subscription.deleted':
+        console.log('Handling subscription deleted event')
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, payload)
         break
       
       case 'invoice.payment_succeeded':
+        console.log('Handling invoice payment succeeded event')
         await handlePaymentSucceeded(event.data.object as Stripe.Invoice, payload)
         break
       
       case 'invoice.payment_failed':
+        console.log('Handling invoice payment failed event')
         await handlePaymentFailed(event.data.object as Stripe.Invoice, payload)
+        break
+      
+      case 'checkout.session.completed':
+        console.log('Handling checkout session completed event')
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, payload)
         break
       
       default:
@@ -106,10 +117,10 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, paylo
       },
     })
   } else {
-    // Find the plan based on Stripe price ID
+    // Find the product based on Stripe price ID
     const priceId = subscription.items.data[0].price.id
-    const plans = await payload.find({
-      collection: 'plans',
+    const products = await payload.find({
+      collection: 'products',
       where: {
         stripePriceId: {
           equals: priceId,
@@ -117,8 +128,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, paylo
       },
     })
 
-    if (plans.docs.length === 0) {
-      console.error('Plan not found for price:', priceId)
+    if (products.docs.length === 0) {
+      console.error('Product not found for price:', priceId)
       return
     }
 
@@ -127,7 +138,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, paylo
       collection: 'subscriptions',
       data: {
         user: user.id,
-        plan: plans.docs[0].id,
+        product: products.docs[0].id,
         stripeSubscriptionId: subscription.id,
         stripeCustomerId: customerId,
         status: subscription.status,
@@ -139,13 +150,13 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, paylo
     })
   }
 
-  // Update user's subscription status and current plan
+  // Update user's subscription status and current product
   await payload.update({
     collection: 'users',
     id: user.id,
     data: {
       subscriptionStatus: subscription.status,
-      currentPlan: subscriptionRecord.plan,
+      currentProduct: subscriptionRecord.product,
     },
   })
 }
@@ -197,7 +208,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, payl
     id: user.id,
     data: {
       subscriptionStatus: 'canceled',
-      currentPlan: null,
+      currentProduct: null,
     },
   })
 }
@@ -231,5 +242,134 @@ async function handlePaymentFailed(invoice: Stripe.Invoice, payload: any) {
         subscriptionStatus: 'past_due',
       },
     })
+  }
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, payload: any) {
+  console.log('Checkout session details:', {
+    id: session.id,
+    customer: session.customer,
+    metadata: session.metadata,
+    mode: session.mode,
+    payment_status: session.payment_status,
+    amount_total: session.amount_total,
+    currency: session.currency
+  })
+
+  const customerId = session.customer as string
+  
+  if (!customerId) {
+    console.error('No customer ID found for checkout session:', session.id)
+    return
+  }
+
+  // Find user by Stripe customer ID
+  const users = await payload.find({
+    collection: 'users',
+    where: {
+      stripeCustomerId: {
+        equals: customerId,
+      },
+    },
+  })
+
+  if (users.docs.length === 0) {
+    console.error('User not found for customer:', customerId)
+    return
+  }
+
+  const user = users.docs[0]
+  console.log('Found user:', user.id, user.email)
+
+  // Get the product ID and type from session metadata
+  const productId = session.metadata?.productId
+  const type = session.metadata?.type
+
+  console.log('Session metadata:', { productId, type })
+
+  if (!productId || !type) {
+    console.error('Missing product metadata in checkout session:', session.metadata)
+    return
+  }
+
+  // Handle one-time purchases
+  if (type === 'one_time') {
+    console.log('Processing one-time purchase for product:', productId)
+    
+    // Find the product
+    const products = await payload.find({
+      collection: 'products',
+      where: {
+        id: {
+          equals: productId,
+        },
+      },
+    })
+
+    if (products.docs.length === 0) {
+      console.error('Product not found for ID:', productId)
+      return
+    }
+
+    const product = products.docs[0]
+    console.log('Found product:', product.name)
+
+    // Create purchase record
+    try {
+      const purchase = await payload.create({
+        collection: 'purchases',
+        data: {
+          user: user.id,
+          product: product.id,
+          stripePaymentIntentId: session.payment_intent as string,
+          stripeCustomerId: customerId,
+          amount: session.amount_total || 0,
+          currency: session.currency || 'usd',
+          status: 'completed',
+          purchaseDate: new Date(),
+        },
+      })
+
+      console.log('One-time purchase successfully recorded:', {
+        purchaseId: purchase.id,
+        userId: user.id,
+        productName: product.name,
+        amount: session.amount_total
+      })
+
+      // Handle coupon usage tracking
+      const couponCode = session.metadata?.couponCode
+      if (couponCode) {
+        try {
+          // Find and increment coupon usage
+          const coupons = await payload.find({
+            collection: 'coupons',
+            where: {
+              code: { equals: couponCode.toUpperCase() }
+            },
+            limit: 1,
+          })
+
+          if (coupons.docs.length > 0) {
+            const coupon = coupons.docs[0]
+            await payload.update({
+              collection: 'coupons',
+              id: coupon.id,
+              data: {
+                currentUses: (coupon.currentUses || 0) + 1,
+              },
+            })
+            console.log('Coupon usage incremented:', couponCode)
+          }
+        } catch (couponError) {
+          console.error('Error tracking coupon usage:', couponError)
+        }
+      }
+
+    } catch (error) {
+      console.error('Error creating purchase record:', error)
+    }
+  } else {
+    console.log('Skipping subscription handling in checkout session (handled by subscription events)')
   }
 }

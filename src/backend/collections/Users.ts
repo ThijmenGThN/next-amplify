@@ -54,6 +54,9 @@ export const Users: CollectionConfig = {
         { label: "Canceled", value: "canceled" },
         { label: "Past Due", value: "past_due" },
         { label: "Trialing", value: "trialing" },
+        { label: "Incomplete", value: "incomplete" },
+        { label: "Incomplete Expired", value: "incomplete_expired" },
+        { label: "Unpaid", value: "unpaid" },
       ],
       defaultValue: "none",
       admin: {
@@ -61,10 +64,10 @@ export const Users: CollectionConfig = {
       },
     },
     {
-      name: "currentPlan",
+      name: "currentProduct",
       type: "relationship",
-      relationTo: "plans",
-      label: "Current Plan",
+      relationTo: "products",
+      label: "Current Product",
       admin: {
         readOnly: true,
       },

@@ -40,6 +40,18 @@ export const Products: CollectionConfig = {
       defaultValue: 'one_time',
     },
     {
+      name: 'interval',
+      type: 'select',
+      admin: {
+        condition: (data) => data.type === 'subscription',
+      },
+      options: [
+        { label: 'Monthly', value: 'month' },
+        { label: 'Yearly', value: 'year' },
+      ],
+      defaultValue: 'month',
+    },
+    {
       name: 'price',
       type: 'number',
       required: true,
@@ -96,6 +108,30 @@ export const Products: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
       label: 'Product Image',
+    },
+    {
+      name: 'isPopular',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Popular Product',
+      admin: {
+        condition: (data) => data.type === 'subscription',
+      },
+    },
+    {
+      name: 'maxUsers',
+      type: 'number',
+      label: 'Max Users',
+      min: 1,
+      admin: {
+        condition: (data) => data.type === 'subscription',
+      },
+    },
+    {
+      name: 'sortOrder',
+      type: 'number',
+      label: 'Sort Order',
+      defaultValue: 0,
     },
   ],
   timestamps: true,

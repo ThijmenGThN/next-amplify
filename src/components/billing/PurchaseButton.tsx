@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { LoadingButton } from '@/components/ui/loading-button'
 import { toast } from 'sonner'
 
 interface PurchaseButtonProps {
@@ -11,6 +10,7 @@ interface PurchaseButtonProps {
   children: React.ReactNode
   className?: string
   disabled?: boolean
+  couponCode?: string
 }
 
 export function PurchaseButton({ 
@@ -18,7 +18,8 @@ export function PurchaseButton({
   priceType, 
   children, 
   className, 
-  disabled 
+  disabled,
+  couponCode
 }: PurchaseButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -35,6 +36,7 @@ export function PurchaseButton({
         body: JSON.stringify({
           productId,
           priceType,
+          couponCode,
           successUrl: `${window.location.origin}/dash/billing?success=true`,
           cancelUrl: `${window.location.origin}/dash/billing?canceled=true`,
         }),
@@ -59,13 +61,14 @@ export function PurchaseButton({
   }
 
   return (
-    <Button
+    <LoadingButton
       onClick={handlePurchase}
-      disabled={disabled || loading}
+      disabled={disabled}
+      loading={loading}
+      loadingText={priceType === 'subscription' ? 'Creating subscription...' : 'Processing purchase...'}
       className={className}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       {children}
-    </Button>
+    </LoadingButton>
   )
 }

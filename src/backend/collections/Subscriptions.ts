@@ -33,11 +33,11 @@ export const Subscriptions: CollectionConfig = {
       label: 'User',
     },
     {
-      name: 'plan',
+      name: 'product',
       type: 'relationship',
-      relationTo: 'plans',
+      relationTo: 'products',
       required: true,
-      label: 'Plan',
+      label: 'Product',
     },
     {
       name: 'stripeSubscriptionId',

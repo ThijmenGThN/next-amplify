@@ -69,8 +69,9 @@ export interface Config {
   collections: {
     users: User;
     products: Product;
-    plans: Plan;
     subscriptions: Subscription;
+    purchases: Purchase;
+    coupons: Coupon;
     media: Media;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -80,8 +81,9 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
-    plans: PlansSelect<false> | PlansSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    purchases: PurchasesSelect<false> | PurchasesSelect<true>;
+    coupons: CouponsSelect<false> | CouponsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -129,8 +131,10 @@ export interface User {
   lastname: string;
   role: 'admin' | 'user';
   stripeCustomerId?: string | null;
-  subscriptionStatus?: ('none' | 'active' | 'canceled' | 'past_due' | 'trialing') | null;
-  currentPlan?: (number | null) | Plan;
+  subscriptionStatus?:
+    | ('none' | 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete' | 'incomplete_expired' | 'unpaid')
+    | null;
+  currentProduct?: (number | null) | Product;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -144,32 +148,6 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "plans".
- */
-export interface Plan {
-  id: number;
-  name: string;
-  description?: string | null;
-  price: number;
-  currency: 'usd' | 'eur' | 'gbp';
-  interval: 'month' | 'year';
-  stripePriceId?: string | null;
-  stripeProductId?: string | null;
-  features?:
-    | {
-        feature: string;
-        id?: string | null;
-      }[]
-    | null;
-  isActive?: boolean | null;
-  isPopular?: boolean | null;
-  maxUsers?: number | null;
-  sortOrder?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
  */
 export interface Product {
@@ -177,6 +155,7 @@ export interface Product {
   name: string;
   description?: string | null;
   type: 'one_time' | 'subscription';
+  interval?: ('month' | 'year') | null;
   price: number;
   currency: 'usd' | 'eur' | 'gbp';
   stripePriceId?: string | null;
@@ -189,6 +168,9 @@ export interface Product {
     | null;
   isActive?: boolean | null;
   image?: (number | null) | Media;
+  isPopular?: boolean | null;
+  maxUsers?: number | null;
+  sortOrder?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -244,7 +226,7 @@ export interface Media {
 export interface Subscription {
   id: number;
   user: number | User;
-  plan: number | Plan;
+  product: number | Product;
   stripeSubscriptionId: string;
   stripeCustomerId: string;
   status: 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid';
@@ -252,6 +234,61 @@ export interface Subscription {
   currentPeriodEnd?: string | null;
   canceledAt?: string | null;
   cancelAtPeriodEnd?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "purchases".
+ */
+export interface Purchase {
+  id: number;
+  user: number | User;
+  product: number | Product;
+  stripePaymentIntentId?: string | null;
+  stripeCustomerId?: string | null;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  purchaseDate: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "coupons".
+ */
+export interface Coupon {
+  id: number;
+  /**
+   * Unique coupon code (e.g., SAVE20, WELCOME50)
+   */
+  code: string;
+  /**
+   * Internal name for this coupon
+   */
+  name: string;
+  discountType: 'percentage' | 'fixed';
+  /**
+   * For percentage: enter 20 for 20%. For fixed: enter amount in cents (e.g., 1000 = $10)
+   */
+  discountValue: number;
+  /**
+   * Leave empty for unlimited uses
+   */
+  maxUses?: number | null;
+  currentUses?: number | null;
+  /**
+   * Leave empty for no expiration
+   */
+  expiresAt?: string | null;
+  appliesTo: 'all' | 'specific' | 'subscriptions' | 'one_time';
+  specificProducts?: (number | Product)[] | null;
+  isActive?: boolean | null;
+  /**
+   * Automatically generated when coupon is used
+   */
+  stripeCouponId?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -271,12 +308,16 @@ export interface PayloadLockedDocument {
         value: number | Product;
       } | null)
     | ({
-        relationTo: 'plans';
-        value: number | Plan;
-      } | null)
-    | ({
         relationTo: 'subscriptions';
         value: number | Subscription;
+      } | null)
+    | ({
+        relationTo: 'purchases';
+        value: number | Purchase;
+      } | null)
+    | ({
+        relationTo: 'coupons';
+        value: number | Coupon;
       } | null)
     | ({
         relationTo: 'media';
@@ -334,7 +375,7 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   stripeCustomerId?: T;
   subscriptionStatus?: T;
-  currentPlan?: T;
+  currentProduct?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -353,6 +394,7 @@ export interface ProductsSelect<T extends boolean = true> {
   name?: T;
   description?: T;
   type?: T;
+  interval?: T;
   price?: T;
   currency?: T;
   stripePriceId?: T;
@@ -365,28 +407,6 @@ export interface ProductsSelect<T extends boolean = true> {
       };
   isActive?: T;
   image?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "plans_select".
- */
-export interface PlansSelect<T extends boolean = true> {
-  name?: T;
-  description?: T;
-  price?: T;
-  currency?: T;
-  interval?: T;
-  stripePriceId?: T;
-  stripeProductId?: T;
-  features?:
-    | T
-    | {
-        feature?: T;
-        id?: T;
-      };
-  isActive?: T;
   isPopular?: T;
   maxUsers?: T;
   sortOrder?: T;
@@ -399,7 +419,7 @@ export interface PlansSelect<T extends boolean = true> {
  */
 export interface SubscriptionsSelect<T extends boolean = true> {
   user?: T;
-  plan?: T;
+  product?: T;
   stripeSubscriptionId?: T;
   stripeCustomerId?: T;
   status?: T;
@@ -407,6 +427,41 @@ export interface SubscriptionsSelect<T extends boolean = true> {
   currentPeriodEnd?: T;
   canceledAt?: T;
   cancelAtPeriodEnd?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "purchases_select".
+ */
+export interface PurchasesSelect<T extends boolean = true> {
+  user?: T;
+  product?: T;
+  stripePaymentIntentId?: T;
+  stripeCustomerId?: T;
+  amount?: T;
+  currency?: T;
+  status?: T;
+  purchaseDate?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "coupons_select".
+ */
+export interface CouponsSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  discountType?: T;
+  discountValue?: T;
+  maxUses?: T;
+  currentUses?: T;
+  expiresAt?: T;
+  appliesTo?: T;
+  specificProducts?: T;
+  isActive?: T;
+  stripeCouponId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
