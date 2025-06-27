@@ -107,16 +107,8 @@ class CryptomusClient {
         .filter(([_, value]) => value !== undefined && value !== null)
     )
     
-    // Sort keys alphabetically (common requirement for crypto APIs)
-    const sortedKeys = Object.keys(cleanData).sort()
-    const sortedData: Record<string, any> = {}
-    
-    for (const key of sortedKeys) {
-      sortedData[key] = cleanData[key]
-    }
-    
-    // Create JSON string
-    return JSON.stringify(sortedData)
+    // Create JSON string - keep natural order, no slash escaping
+    return JSON.stringify(cleanData)
   }
 
   private generateSignFromJson(jsonString: string): string {

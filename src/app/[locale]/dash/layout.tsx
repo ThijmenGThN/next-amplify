@@ -7,13 +7,8 @@ import { cn } from '@/libs/cn'
 
 const sidebarItems = [
     {
-        title: "Dashboard",
-        href: "/dash",
-        icon: Home
-    },
-    {
         title: "Profile",
-        href: "/dash/profile",
+        href: "/dash",
         icon: User
     },
     {
@@ -23,7 +18,7 @@ const sidebarItems = [
     }
 ]
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
 
     return (
@@ -33,7 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex h-full flex-col">
                     {/* Logo */}
                     <div className="flex h-14 items-center border-b px-6">
-                        <h2 className="font-semibold">next-leaflet</h2>
+                        <h2 className="font-semibold text-center">next-leaflet</h2>
                     </div>
 
                     {/* Navigation */}
