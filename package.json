@@ -15,7 +15,8 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation node .next/standalone/server.js",
     "email": "email dev --dir ./src/emails",
     "deploy": "npm ci && npm run build && npm start",
-    "sync-template": "node .sync-template.js"
+    "sync-template": "node .sync-template.js",
+    "sync-fork": "node .sync-fork.js"
   },
   "dependencies": {
     "@eslint/eslintrc": "^3.3.1",
