@@ -55,7 +55,7 @@ export default function Page() {
             } else {
                 router.push("/login")
             }
-        } catch (_err) {
+        } catch (err) {
             setErrorMessage('An unexpected error occurred. Please try again.')
             setIsLoading(false)
         }

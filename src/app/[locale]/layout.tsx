@@ -2,8 +2,6 @@ import { Inter } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { routing } from '@/locales/routing'
 import { hasLocale, NextIntlClientProvider } from 'next-intl'
-import { Toaster } from 'sonner'
-import { StripeProvider } from '@/components/providers/StripeProvider'
 
 import type { Metadata } from 'next'
 
@@ -23,12 +21,9 @@ export default async function Layout({ children, params }: { children: React.Rea
     return (
         <html lang={locale}>
             <body className={inter.className}>
-                <StripeProvider>
-                    <NextIntlClientProvider>
-                        {children}
-                    </NextIntlClientProvider>
-                    <Toaster />
-                </StripeProvider>
+                <NextIntlClientProvider>
+                    {children}
+                </NextIntlClientProvider>
             </body>
         </html>
     )

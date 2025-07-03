@@ -3,8 +3,8 @@
 import { execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 
-const TEMPLATE_REPO = 'https://github.com/ThijmenGThN/next-amplify.git';
-const TEMPLATE_REMOTE = 'next-amplify'; // Name matches the actual repo name
+const TEMPLATE_REPO = 'https://github.com/ThijmenGThN/next-leaflet.git';
+const TEMPLATE_REMOTE = 'next-leaflet'; // Name matches the actual repo name
 
 function log(message, type = 'info') {
     const styles = {
