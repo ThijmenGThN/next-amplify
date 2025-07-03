@@ -5,24 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Core Commands
-- `npm run dev` - Start development server with hot reloading
-- `npm run devsafe` - Clean build cache and start development server
-- `npm run build` - Build for production (includes standalone output and static files)
-- `npm run start` - Start production server
 - `npm run lint` - Run ESLint with Next.js TypeScript rules
 
 ### Database & Types
 - `npm run generate:types` - Generate TypeScript types from Payload CMS schema
 - `npm run generate:importmap` - Generate import map for Payload
-- `npm run payload` - Access Payload CMS CLI
-
-### Email Development
-- `npm run email` - Start email development server for testing templates
-
-### Docker & Deployment
-- `docker compose up -d` - Start development database
-- `npm run deploy` - Full deployment command (install, build, start)
-- `npm run sync-template` - Sync with upstream template repository
 
 ## Architecture Overview
 
@@ -68,19 +55,6 @@ The CMS manages these core collections:
 - **Cryptomus**: Cryptocurrency payment processing
 - Both systems integrate with the same user/product/subscription model
 
-### Environment Configuration
-The application uses environment profiles:
-- `COMPOSE_PROFILES=dev` for development
-- `COMPOSE_PROFILES=prod` for production
-- Database connection adjusts automatically based on profile
-
 ### Type Safety
 - Auto-generated types from Payload schema at `src/types/payload-types.ts`
-- Run `npm run generate:types` after schema changes
 - TypeScript paths configured for `@/*` imports
-
-### Development Notes
-- Always run `npm run generate:types` after modifying Payload collections
-- Use `npm run devsafe` if experiencing build cache issues
-- Email templates are in `src/emails/` and can be tested with `npm run email`
-- The application supports standalone Docker deployment
