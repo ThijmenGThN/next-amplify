@@ -8,6 +8,89 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-05-28.basil',
 })
 
+export const createStripeProduct = async (productData: {
+  name: string
+  description?: string
+  type: 'one_time' | 'subscription'
+  price: number
+  currency: string
+  interval?: 'month' | 'year'
+}) => {
+  const product = await stripe.products.create({
+    name: productData.name,
+    description: productData.description,
+    type: productData.type === 'subscription' ? 'service' : 'good',
+  })
+
+  const priceConfig: Stripe.PriceCreateParams = {
+    product: product.id,
+    unit_amount: productData.price,
+    currency: productData.currency,
+  }
+
+  if (productData.type === 'subscription' && productData.interval) {
+    priceConfig.recurring = {
+      interval: productData.interval,
+    }
+  }
+
+  const price = await stripe.prices.create(priceConfig)
+
+  return {
+    productId: product.id,
+    priceId: price.id,
+  }
+}
+
+export const updateStripeProduct = async (
+  productId: string,
+  priceId: string,
+  productData: {
+    name: string
+    description?: string
+    price: number
+  }
+) => {
+  await stripe.products.update(productId, {
+    name: productData.name,
+    description: productData.description,
+  })
+
+  const price = await stripe.prices.create({
+    product: productId,
+    unit_amount: productData.price,
+    currency: 'usd',
+  })
+
+  await stripe.prices.update(priceId, {
+    active: false,
+  })
+
+  return {
+    priceId: price.id,
+  }
+}
+
+export const getStripeCustomer = async (customerId: string) => {
+  try {
+    const customer = await stripe.customers.retrieve(customerId)
+    return customer
+  } catch (error) {
+    console.error('Error retrieving Stripe customer:', error)
+    return null
+  }
+}
+
+export const getStripeSubscription = async (subscriptionId: string) => {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+    return subscription
+  } catch (error) {
+    console.error('Error retrieving Stripe subscription:', error)
+    return null
+  }
+}
+
 export async function createStripeCustomer(user: any) {
   const customer = await stripe.customers.create({
     email: user.email,
